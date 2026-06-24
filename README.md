@@ -1,6 +1,6 @@
 # twilio-contact-center-lab
 
-Local **Node.js + Twilio** lab for contact-center interview prep. Just Express webhooks, TwiML IVR, and a simple agent screen-pop UI.
+Local **Node.js + Twilio** lab. Just Express webhooks, TwiML IVR, and a simple agent screen-pop UI.
 
 ## What this demonstrates
 
