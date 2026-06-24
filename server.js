@@ -59,11 +59,11 @@ app.post('/voice/incoming', voiceWebhook, (req, res) => {
   if (!isBusinessHours()) {
     const response = new VoiceResponse();
     response.say('We are not open at this time. Please call back during business hours.');
-    response.hangup();
+    response.redirect('/voice/voicemail');
     sendTwiml(res, response);
     return;
   }
-  
+  // If the current time is within business hours, we can build the call record and set the last call.
   const record = buildCallRecord(req, { stage: 'ivr' });
   setLastCall(record);
   console.log('voice/incoming:', record);
@@ -80,6 +80,19 @@ app.post('/voice/incoming', voiceWebhook, (req, res) => {
   response.say('We did not receive your selection.');
   response.redirect('/voice/incoming');
 
+  sendTwiml(res, response);
+});
+
+app.post('/voice/voicemail', voiceWebhook, (req, res) => {
+  const record = buildCallRecord(req, { stage: 'voicemail' });
+  setLastCall(record);
+
+  //console.log('voice/voicemail:', record);
+
+  const response = new VoiceResponse();
+  response.say('Please leave a message after the tone.');
+  response.say('Thank you. Goodbye.');
+  response.hangup();
   sendTwiml(res, response);
 });
 
