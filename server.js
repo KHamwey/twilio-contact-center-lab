@@ -9,12 +9,16 @@ const { lookupCustomer, queueForDigit } = require('./lib/crm');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
-const VALIDATE_WEBHOOKS = process.env.TWILIO_VALIDATE_WEBHOOKS === 'true';
+const VALIDATE_WEBHOOKS = process.env.TWILIO_VALIDATE_WEBHOOKS === 'true'; //look down for more information on this.
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(express.static('public'));
 
+// Voice webhook validation ... this is needed for local development. I need to be able to toggle off the validation for testing purposes.
+// If you are not in local development, you should enable this.
+//TWILIO_VALIDATE_WEBHOOKS=true or TWILIO_VALIDATE_WEBHOOKS=false in your .env file to enable or disable it.
+//Im using ngrok to test the webhooks and I need to be able to toggle off the validation for testing purposes.
 const voiceWebhook = VALIDATE_WEBHOOKS
   ? twilio.webhook({ validate: true })
   : (_req, _res, next) => next();
@@ -41,8 +45,25 @@ function sendTwiml(res, response) {
   res.send(response.toString());
 }
 
+// This function is used to check if the current time is within business hours.
+// In your .env file, you can set the BUSINESS_HOURS_START and BUSINESS_HOURS_END to the start and end times of your business hours.
+// The default is 7-19 for 7am-7pm ET.
+function isBusinessHours() {
+  const now = new Date();
+  const hours = now.getUTCHours();
+  return hours >= process.env.BUSINESS_HOURS_START && hours < process.env.BUSINESS_HOURS_END;
+}
+
 // Inbound call entry — configure this URL on your Twilio number ("A CALL COMES IN").
 app.post('/voice/incoming', voiceWebhook, (req, res) => {
+  if (!isBusinessHours()) {
+    const response = new VoiceResponse();
+    response.say('We are not open at this time. Please call back during business hours.');
+    response.hangup();
+    sendTwiml(res, response);
+    return;
+  }
+  
   const record = buildCallRecord(req, { stage: 'ivr' });
   setLastCall(record);
   console.log('voice/incoming:', record);
