@@ -55,7 +55,7 @@ app.post('/voice/incoming', voiceWebhook, (req, res) => {
     method: 'POST',
     timeout: 5,
   });
-  gather.say('Press 1 for sales, or 2 for support.');
+  gather.say('Press 1 for sales, or 2 for support or 3 for IT or 4 for billing.');
   response.say('We did not receive your selection.');
   response.redirect('/voice/incoming');
 
