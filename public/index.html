@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Agent Desktop — Screen Pop</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem; line-height: 1.5; }
+    h1 { margin-bottom: 0.25rem; }
+    .subtitle { color: #555; margin-top: 0; }
+    #status { padding: 0.75rem 1rem; background: #f4f4f4; border-radius: 6px; margin: 1rem 0; }
+    #status.active { background: #e8f5e9; border: 1px solid #a5d6a7; }
+    label { display: block; margin-top: 0.75rem; font-weight: 600; }
+    input, textarea { width: 100%; padding: 0.5rem; margin-top: 0.25rem; box-sizing: border-box; }
+    button { margin-top: 1rem; padding: 0.6rem 1.2rem; cursor: pointer; }
+    .meta { font-size: 0.9rem; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Agent Desktop</h1>
+  <p class="subtitle">Screen pop lab — polls <code>/api/lastcall</code> when calls arrive via Twilio.</p>
+  <div id="status">Waiting for call...</div>
+  <form id="form" style="display:none">
+    <p class="meta" id="meta"></p>
+    <label>Caller <input id="caller" readonly></label>
+    <label>DID <input id="did" readonly></label>
+    <label>Customer <input id="customerName" readonly></label>
+    <label>Account ID <input id="accountId" readonly></label>
+    <label>Tier <input id="tier" readonly></label>
+    <label>Queue <input id="queue" readonly></label>
+    <label>Notes <textarea id="notes" rows="3"></textarea></label>
+    <button type="button" id="send">Log to CRM (simulate)</button>
+  </form>
+
+  <script>
+    const status = document.getElementById('status');
+    const form = document.getElementById('form');
+    const meta = document.getElementById('meta');
+
+    function setField(id, value) {
+      document.getElementById(id).value = value || '';
+    }
+
+    setInterval(async () => {
+      try {
+        const r = await fetch('/api/lastcall');
+        const data = await r.json();
+        if (data && data.callSid) {
+          status.textContent = `Call ${data.callSid} — ${data.stage || 'active'}`;
+          status.className = 'active';
+          form.style.display = 'block';
+          meta.textContent = `Received ${data.receivedAt} · Status: ${data.callStatus || 'n/a'}`;
+          setField('caller', data.caller);
+          setField('did', data.did);
+          setField('customerName', data.customerName);
+          setField('accountId', data.accountId);
+          setField('tier', data.tier);
+          setField('queue', data.queueLabel || data.queue || '');
+        } else {
+          status.textContent = 'Waiting for call...';
+          status.className = '';
+          form.style.display = 'none';
+        }
+      } catch {
+        status.textContent = 'Error polling server';
+        status.className = '';
+      }
+    }, 2000);
+
+    document.getElementById('send').addEventListener('click', () => {
+      const payload = {
+        caller: document.getElementById('caller').value,
+        did: document.getElementById('did').value,
+        customerName: document.getElementById('customerName').value,
+        accountId: document.getElementById('accountId').value,
+        notes: document.getElementById('notes').value,
+      };
+      console.log('Would send to CRM:', payload);
+      alert('Simulated CRM write — see browser console.');
+    });
+  </script>
+</body>
+</html>
